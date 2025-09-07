@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファミリーマート新商品アプリ - 高速ダウンロード版</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .product-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-center text-green-600 mb-2">
+                <i class="fas fa-store mr-2"></i>ファミリーマート新商品情報
+            </h1>
+            <p class="text-center text-gray-600 mb-6">今週の新商品を高速ダウンロード対応で取得</p>
+            
+            <!-- 新商品ページリンク -->
+            <div class="flex flex-wrap gap-4 justify-center mb-6">
+                <a href="https://www.family.co.jp/goods/newgoods.html" target="_blank" 
+                   class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-external-link-alt mr-2"></i>今週の新商品ページを開く
+                </a>
+                <a href="https://www.family.co.jp/goods/newgoods/nextweek.html" target="_blank" 
+                   class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-calendar-alt mr-2"></i>来週の新商品ページを開く
+                </a>
+            </div>
+            
+            <!-- HTML入力エリア -->
+            <div class="mb-6">
+                <label for="htmlInput" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-code mr-1"></i>新商品ページのHTMLソースを貼り付けてください
+                </label>
+                <div class="relative">
+                    <textarea id="htmlInput" rows="8" 
+                              class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-vertical"
+                              placeholder="Ctrl+U → Ctrl+A → Ctrl+C でコピーしたHTMLソースをここに貼り付けてください"></textarea>
+                    <button id="clearBtn" 
+                            class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <i class="fas fa-trash mr-1"></i>完全クリア
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 解析ボタン -->
+            <div class="text-center mb-6">
+                <button id="analyzeBtn" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium text-lg transition-colors">
+                    <i class="fas fa-search mr-2"></i>商品情報を解析
+                </button>
+            </div>
+            
+            <!-- 結果表示エリア -->
+            <div id="results" class="mb-6"></div>
+            
+            <!-- 商品表示エリア -->
+            <div id="productsContainer"></div>
+            
+            <!-- デバッグ情報 -->
+            <div id="debugInfo" class="mt-8 p-4 bg-gray-50 rounded-lg text-sm text-gray-600"></div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let allProducts = [];
+        
+        // プロキシサーバーリスト（高速化のため複数用意）
+        const PROXY_SERVERS = [
+            'https://api.allorigins.win/raw?url=',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://corsproxy.io/?',
+            'https://cors-proxy.htmldriven.com/?url='
+        ];
+        
+        // DOM要素の取得
+        const htmlInput = document.getElementById('htmlInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const results = document.getElementById('results');
+        const productsContainer = document.getElementById('productsContainer');
+        const debugInfo = document.getElementById('debugInfo');
+        
+        // イベントリスナーの設定
+        analyzeBtn.addEventListener('click', analyzeProducts);
+        clearBtn.addEventListener('click', clearAll);
+        
+        // 完全クリア機能
+        function clearAll() {
+            htmlInput.value = '';
+            results.innerHTML = '';
+            productsContainer.innerHTML = '';
+            debugInfo.innerHTML = '';
+            allProducts = [];
+            
+            results.innerHTML = `
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                    <div class="flex">
+                        <i class="fas fa-info-circle text-blue-400 mr-2 mt-1"></i>
+                        <p class="text-blue-700">すべてクリアしました。新しいHTMLソースを貼り付けてください。</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 商品解析メイン関数
+        function analyzeProducts() {
+            const html = htmlInput.value.trim();
+            if (!html) {
+                showError('HTMLソースが入力されていません。');
+                return;
+            }
+            
+            // ローディング表示
+            results.innerHTML = `
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                    <div class="flex items-center">
+                        <div class="loading-spinner mr-3"></div>
+                        <p class="text-blue-700">商品情報を解析中...</p>
+                    </div>
+                </div>
+            `;
+            
+            try {
+                const products = extractProducts(html);
+                if (products.length === 0) {
+                    showError('商品が発見できませんでした。HTMLの形式を確認してください。');
+                    return;
+                }
+                
+                allProducts = products;
+                displayProducts(products);
+                showSuccess(`${products.length}件の商品を発見しました！`);
+                
+            } catch (error) {
+                console.error('解析エラー:', error);
+                showError('商品の解析中にエラーが発生しました。HTMLの形式を確認してください。');
+            }
+        }
+        
+        // 商品抽出関数（精度向上版と同じロジック）
+        function extractProducts(html) {
+            const products = [];
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // 複数のパターンで商品を検索
+            const patterns = [
+                'a[href*="/goods/"]',
+                'a[href*="/obento/"]',
+                'a[href*="/omusubi/"]',
+                'a[href*="/sandwich/"]',
+                'a[href*="/bread/"]',
+                'a[href*="/dessert/"]',
+                'a[href*="/drink/"]',
+                '.goods-item',
+                '.product-item'
+            ];
+            
+            let debugLog = [];
+            
+            patterns.forEach(pattern => {
+                const elements = tempDiv.querySelectorAll(pattern);
+                debugLog.push(`パターン "${pattern}": ${elements.length}件見つかりました`);
+                
+                elements.forEach(element => {
+                    try {
+                        const product = extractProductFromElement(element);
+                        if (product && isValidProduct(product)) {
+                            products.push(product);
+                        }
+                    } catch (error) {
+                        console.warn('商品抽出エラー:', error);
+                    }
+                });
+            });
+            
+            // 重複除去
+            const uniqueProducts = removeDuplicateProducts(products);
+            
+            // デバッグ情報更新
+            debugInfo.innerHTML = `
+                <h3 class="font-bold mb-2"><i class="fas fa-bug mr-1"></i>デバッグ情報</h3>
+                <div class="space-y-1">
+                    ${debugLog.map(log => `<div>• ${log}</div>`).join('')}
+                    <div class="font-semibold text-green-600">最終結果: ${uniqueProducts.length}件の有効な商品</div>
+                </div>
+            `;
+            
+            return uniqueProducts;
+        }
+        
+        // 要素から商品情報を抽出
+        function extractProductFromElement(element) {
+            const img = element.querySelector('img');
+            const link = element.getAttribute('href') || element.querySelector('a')?.getAttribute('href');
+            
+            if (!img || !link) return null;
+            
+            // 価格情報の抽出
+            const priceText = element.textContent || '';
+            const priceMatch = priceText.match(/(\d+)円/);
+            const price = priceMatch ? priceMatch[1] + '円' : '';
+            
+            // 商品名の抽出
+            const nameElement = element.querySelector('h3, .product-name, .goods-name') || element;
+            let productName = nameElement.textContent?.replace(/\s+/g, ' ').trim() || '';
+            
+            // カテゴリーの抽出
+            const category = extractCategory(link) || '商品';
+            
+            // 画像URLの処理
+            let imageUrl = img.getAttribute('src') || img.getAttribute('data-src') || '';
+            if (imageUrl.startsWith('//')) {
+                imageUrl = 'https:' + imageUrl;
+            } else if (imageUrl.startsWith('/')) {
+                imageUrl = 'https://www.family.co.jp' + imageUrl;
+            }
+            
+            return {
+                name: productName,
+                price: price,
+                category: category,
+                imageUrl: imageUrl,
+                productUrl: link.startsWith('http') ? link : 'https://www.family.co.jp' + link
+            };
+        }
+        
+        // カテゴリー抽出
+        function extractCategory(url) {
+            const categoryMap = {
+                '/omusubi/': 'おむすび',
+                '/obento/': 'お弁当',
+                '/sushi/': 'お寿司',
+                '/sandwich/': 'サンドイッチ・ロールパン・バーガー',
+                '/bread/': 'パン',
+                '/noodle/': 'そば・うどん・中華めん',
+                '/pasta/': 'パスタ',
+                '/salad/': 'サラダ',
+                '/sidedishes/': 'チルド惣菜',
+                '/deli/': 'スープ・グラタン・お好み焼き',
+                '/chilleddaily/': '日配品',
+                '/friedfoods/': 'ホットスナック・惣菜',
+                '/chukaman/': '中華まん',
+                '/dessert/': 'デザート',
+                '/baked_sweets/': '焼き菓子・和菓子',
+                '/cafe/': 'コーヒー・フラッペ',
+                '/processed_foods/': '加工食品',
+                '/snack/': 'お菓子',
+                '/drink/': '飲料',
+                '/alcohol/': 'お酒',
+                '/frozen_foods/': '冷凍食品',
+                '/ice/': 'アイス',
+                '/daily_necessities/': '日用品',
+                '/charakuji/': 'キャラクターくじ・エンタメ雑貨など'
+            };
+            
+            for (const [path, category] of Object.entries(categoryMap)) {
+                if (url.includes(path)) {
+                    return category;
+                }
+            }
+            return '商品';
+        }
+        
+        // 有効な商品かチェック
+        function isValidProduct(product) {
+            // ロゴや不要な画像を除外
+            const excludePatterns = [
+                'familymart',
+                'logo',
+                'banner',
+                'icon',
+                'nav'
+            ];
+            
+            const imageUrl = product.imageUrl.toLowerCase();
+            if (excludePatterns.some(pattern => imageUrl.includes(pattern))) {
+                return false;
+            }
+            
+            // 商品URLパターンのチェック
+            const validUrlPatterns = [
+                '/goods/',
+                '/obento/',
+                '/omusubi/',
+                '/sandwich/',
+                '/bread/',
+                '/dessert/',
+                '/drink/'
+            ];
+            
+            return validUrlPatterns.some(pattern => product.productUrl.includes(pattern)) &&
+                   product.imageUrl &&
+                   product.name.length > 0;
+        }
+        
+        // 重複商品の除去
+        function removeDuplicateProducts(products) {
+            const seen = new Set();
+            return products.filter(product => {
+                const key = product.imageUrl + product.name;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+        
+        // 商品表示
+        function displayProducts(products) {
+            productsContainer.innerHTML = `
+                <div class="bg-white rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">
+                        <i class="fas fa-shopping-basket mr-2 text-green-600"></i>
+                        新商品一覧 (${products.length}件)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        ${products.map((product, index) => `
+                            <div class="product-card bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <div class="aspect-w-1 aspect-h-1 bg-gray-100">
+                                    <img src="${product.imageUrl}" 
+                                         alt="${product.name}"
+                                         class="w-full h-48 object-cover"
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">
+                                </div>
+                                <div class="p-4">
+                                    <div class="text-xs text-blue-600 font-medium mb-1">${product.category}</div>
+                                    <h3 class="font-bold text-gray-900 mb-2 line-clamp-2">${product.name}</h3>
+                                    <div class="text-lg font-bold text-green-600 mb-3">${product.price}</div>
+                                    <button onclick="fastDownload('${product.imageUrl}', '${product.name}', ${index})" 
+                                            id="downloadBtn-${index}"
+                                            class="download-btn w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center">
+                                        <i class="fas fa-download mr-2"></i>
+                                        <span class="btn-text">ダウンロード</span>
+                                    </button>
+                                    <div id="progress-${index}" class="mt-2 hidden">
+                                        <div class="w-full bg-blue-200 rounded-full h-2">
+                                            <div id="progressBar-${index}" class="progress-bar bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <div class="text-xs text-blue-600 mt-1 text-center" id="progressText-${index}">準備中...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 高速ダウンロード関数
+        async function fastDownload(imageUrl, productName, index) {
+            const btn = document.getElementById(`downloadBtn-${index}`);
+            const progress = document.getElementById(`progress-${index}`);
+            const progressBar = document.getElementById(`progressBar-${index}`);
+            const progressText = document.getElementById(`progressText-${index}`);
+            
+            // ボタンをローディング状態に
+            btn.innerHTML = `
+                <div class="loading-spinner mr-2"></div>
+                <span>ダウンロード中...</span>
+            `;
+            btn.disabled = true;
+            progress.classList.remove('hidden');
+            
+            try {
+                // 並列でプロキシサーバーを試行
+                const downloadPromises = PROXY_SERVERS.map(async (proxy, proxyIndex) => {
+                    try {
+                        progressText.textContent = `プロキシ${proxyIndex + 1}を試行中...`;
+                        progressBar.style.width = `${(proxyIndex + 1) * 20}%`;
+                        
+                        const proxyUrl = proxy + encodeURIComponent(imageUrl);
+                        const response = await fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'image/*,*/*;q=0.8',
+                            },
+                            timeout: 10000 // 10秒タイムアウト
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const blob = await response.blob();
+                        return { blob, proxyIndex };
+                    } catch (error) {
+                        console.warn(`プロキシ${proxyIndex + 1}失敗:`, error);
+                        throw error;
+                    }
+                });
+                
+                // 最初に成功したプロキシを使用
+                const result = await Promise.any(downloadPromises);
+                
+                progressText.textContent = `プロキシ${result.proxyIndex + 1}で取得成功！`;
+                progressBar.style.width = '90%';
+                
+                // ファイル名生成（年月日_時間形式）
+                const now = new Date();
+                const dateStr = now.getFullYear().toString() + 
+                               (now.getMonth() + 1).toString().padStart(2, '0') + 
+                               now.getDate().toString().padStart(2, '0');
+                const timeStr = now.getHours().toString().padStart(2, '0') + 
+                               now.getMinutes().toString().padStart(2, '0') + 
+                               now.getSeconds().toString().padStart(2, '0');
+                const filename = `${dateStr}_${timeStr}.jpg`;
+                
+                // ダウンロード実行
+                const url = URL.createObjectURL(result.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                progressBar.style.width = '100%';
+                progressText.textContent = 'ダウンロード完了！';
+                
+                // 成功表示
+                setTimeout(() => {
+                    btn.innerHTML = `
+                        <i class="fas fa-check mr-2"></i>
+                        <span>完了</span>
+                    `;
+                    btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                    btn.classList.add('bg-green-500');
+                    
+                    setTimeout(() => {
+                        resetDownloadButton(index);
+                    }, 3000);
+                }, 500);
+                
+            } catch (error) {
+                console.error('ダウンロードエラー:', error);
+                
+                // エラー表示
+                btn.innerHTML = `
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>エラー</span>
+                `;
+                btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                btn.classList.add('bg-red-500');
+                progressText.textContent = 'ダウンロードに失敗しました';
+                
+                setTimeout(() => {
+                    resetDownloadButton(index);
+                }, 3000);
+            }
+        }
+        
+        // ダウンロードボタンをリセット
+        function resetDownloadButton(index) {
+            const btn = document.getElementById(`downloadBtn-${index}`);
+            const progress = document.getElementById(`progress-${index}`);
+            
+            btn.innerHTML = `
+                <i class="fas fa-download mr-2"></i>
+                <span>ダウンロード</span>
+            `;
+            btn.disabled = false;
+            btn.className = 'download-btn w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center';
+            progress.classList.add('hidden');
+        }
+        
+        // エラー表示
+        function showError(message) {
+            results.innerHTML = `
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-triangle text-red-400 mr-2 mt-1"></i>
+                        <p class="text-red-700">${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 成功表示
+        function showSuccess(message) {
+            results.innerHTML = `
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded">
+                    <div class="flex">
+                        <i class="fas fa-check-circle text-green-400 mr-2 mt-1"></i>
+                        <p class="text-green-700">${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Promise.any polyfill for older browsers
+        if (!Promise.any) {
+            Promise.any = function(promises) {
+                return new Promise((resolve, reject) => {
+                    let rejections = [];
+                    let completed = 0;
+                    
+                    promises.forEach((promise, index) => {
+                        Promise.resolve(promise)
+                            .then(resolve)
+                            .catch(error => {
+                                rejections[index] = error;
+                                completed++;
+                                if (completed === promises.length) {
+                                    reject(new AggregateError(rejections, 'All promises rejected'));
+                                }
+                            });
+                    });
+                });
+            };
+        }
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDoRI2Cg2Jso3fNAp6njoMo0dFgFj8yAtqfL%2FaCpC7dMyURNIfnmWQ6qjKiT0ppPxDvFdIA%2Brn4%2Fb9V%2FR4C%2FrrrNXGOF1ndoj8ROHEj7DpiIyAPNd49lobAdr553cAshh1tRgB4ATB6W5sy%2BaoYfTaKEtVWm1K2Oh0JrVdWhKhbD2%2F%2BQXa1ttKru1L%2BD0UBMgdkqO6invMjxG0sQ18EYLCtdiqnoDgh8lXt%2Ftfuh1pkYHs5kumPK7%2F20yewid7HTqDRm42XfZFECx4t5lABvjthhpS2VxEPRON46pn9ynVZjAEWOWsGZMYVlFd76rJ8N9WUdi1nsGpgIijaSp2XAuoXByEP7lF6TwOc0nchc7liZIRU5gmwZsnqQEAShwEgKOdGW5fKKmhQZNkxpbYvm9NrDd%2B7w1fgD5xGjvJ8sIRQguewXe8cjV3PBE7fSODYUzv7DsjP99onVakga9sO%2B9yDGvgApn%2Frs9HL6dlLMB2rG%2FN9R3UbIQdee43tg0WkIuCg%3D%3D";
+        window.__genspark_locale = "ja-JP";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDoRI2Cg2Jso3fNAp6njoMo0dFgFj8yAtqfL/aCpC7dMyURNIfnmWQ6qjKiT0ppPxDvFdIA+rn4/b9V/R4C/rrrNXGOF1ndoj8ROHEj7DpiIyAPNd49lobAdr553cAshh1tRgB4ATB6W5sy+aoYfTaKEtVWm1K2Oh0JrVdWhKhbD2/+QXa1ttKru1L+D0UBMgdkqO6invMjxG0sQ18EYLCtdiqnoDgh8lXt/tfuh1pkYHs5kumPK7/20yewid7HTqDRm42XfZFECx4t5lABvjthhpS2VxEPRON46pn9ynVZjAEWOWsGZMYVlFd76rJ8N9WUdi1nsGpgIijaSp2XAuoXByEP7lF6TwOc0nchc7liZIRU5gmwZsnqQEAShwEgKOdGW5fKKmhQZNkxpbYvm9NrDd+7w1fgD5xGjvJ8sIRQguewXe8cjV3PBE7fSODYUzv7DsjP99onVakga9sO+9yDGvgApn/rs9HL6dlLMB2rG/N9R3UbIQdee43tg0WkIuCg==";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
