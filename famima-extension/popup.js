@@ -130,8 +130,11 @@ async function loadProducts() {
     // 現在のタブを取得
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // URLチェック
-    if (!tab.url.includes('family.co.jp/goods/newgoods/nextweek.html')) {
+    // URLチェック（今週・来週の新商品ページ）
+    const isValidUrl = tab.url.includes('family.co.jp/goods/newgoods.html') ||
+                       tab.url.includes('family.co.jp/goods/newgoods/nextweek.html');
+
+    if (!isValidUrl) {
       document.getElementById('mainContent').classList.add('hide');
       document.getElementById('errorPage').classList.add('show');
       return;

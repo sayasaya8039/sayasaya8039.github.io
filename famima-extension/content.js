@@ -7,20 +7,25 @@ function extractProductImages() {
   const products = [];
   console.log('=== 画像検出開始 ===');
 
-  // より幅広いセレクタパターンを試す
+  // より具体的なセレクタパターン（商品リスト内の画像のみ）
   const selectors = [
+    // ファミリーマートの実際の構造
+    '.ly-wrp-mod-infoset3-img img',
+    'img.ly-hovr',
+    '.ly-mod-infoset3-img img',
+    // その他のパターン
+    'ul.ly-mod-list4 > li > a > img',
+    'ul.ly-mod-list4 > li img',
     'ul.ly-mod-list4 li img',
-    'ul.product-list li img',
+    'div.ly-mod-list4 li img',
+    'ul.product-list > li > a > img',
+    'ul.product-list > li img',
+    'div.product-item > img',
     'div.product-item img',
-    'li.item img',
-    '.newgoods img',
-    'article img',
-    'div.goods img',
-    '.item-list img',
-    '.product img',
-    'main img',
-    '#main img',
-    '.content img'
+    'ul.goodsList li img',
+    'div.goodsList img',
+    'section.newgoods li img',
+    'section.newgoods img'
   ];
 
   let images = [];
@@ -32,7 +37,8 @@ function extractProductImages() {
       const found = document.querySelectorAll(selector);
       console.log(`セレクタ '${selector}': ${found.length} 個の画像`);
 
-      if (found.length > 0 && images.length === 0) {
+      // 適切な数（1～150個）の画像が見つかった場合のみ使用
+      if (found.length > 0 && found.length <= 150 && images.length === 0) {
         images = found;
         usedSelector = selector;
       }
@@ -41,9 +47,8 @@ function extractProductImages() {
     }
   }
 
-  // セレクタで見つからない場合、すべてのimg要素を取得してフィルタリング
   if (images.length === 0) {
-    console.log('セレクタで見つからなかったため、全画像を検索します');
+    console.log('適切なセレクタが見つからなかったため、全画像から厳密にフィルタリングします');
     images = document.querySelectorAll('img');
     console.log(`ページ内の全画像数: ${images.length}`);
   } else {
@@ -51,6 +56,7 @@ function extractProductImages() {
   }
 
   // 画像を処理
+  let debugCount = 0;
   images.forEach((img, index) => {
     // 様々な属性から画像URLを取得
     const imgUrl = img.src ||
@@ -60,56 +66,128 @@ function extractProductImages() {
                    img.getAttribute('data-original') ||
                    img.getAttribute('data-lazy');
 
-    // デバッグ: 最初の数個の画像情報を出力
-    if (index < 5) {
-      console.log(`画像 #${index + 1}:`, {
-        src: img.src,
-        alt: img.alt,
-        width: img.width,
-        height: img.height,
-        className: img.className,
-        parent: img.parentElement?.tagName
-      });
-    }
+    // === 厳格なフィルタリング ===
 
-    // フィルタリング条件
+    // URLが存在しない
     if (!imgUrl) {
       return;
     }
 
-    // データURL、小さなアイコン、ロゴなどをスキップ
+    // Chrome拡張機能の画像を除外（重要！）
+    if (imgUrl.startsWith('chrome-extension://')) {
+      return;
+    }
+
+    // データURL
     if (imgUrl.startsWith('data:image')) {
       return;
     }
 
+    // デバッグ: family.co.jp ドメインの最初の20個の画像情報を詳細に出力
+    const isFamilyDomain = imgUrl.includes('family.co.jp');
+    if (isFamilyDomain && debugCount < 20) {
+      console.log(`[family.co.jp] 画像 #${debugCount + 1}:`);
+      console.log(`  src: ${imgUrl}`);
+      console.log(`  alt: "${img.alt}"`);
+      console.log(`  サイズ: ${img.width} x ${img.height}`);
+      console.log(`  className: "${img.className}"`);
+      console.log(`  親要素: ${img.parentElement?.tagName} (class: "${img.parentElement?.className}")`);
+      console.log(`  祖父要素: ${img.parentElement?.parentElement?.tagName} (class: "${img.parentElement?.parentElement?.className}")`);
+      console.log('---');
+      debugCount++;
+    }
+
+    // URLに除外キーワードが含まれる
     const lowerUrl = imgUrl.toLowerCase();
-    if (lowerUrl.includes('icon') ||
-        lowerUrl.includes('logo') ||
-        lowerUrl.includes('banner') ||
-        lowerUrl.includes('btn') ||
-        lowerUrl.includes('arrow')) {
+    const excludeKeywords = [
+      'icon', 'logo', 'banner', 'btn', 'button',
+      'arrow', 'nav', 'header', 'footer', 'bg',
+      'background', 'sprite', 'common', 'ui',
+      'symbol', 'mark', 'badge', 'stamp'
+    ];
+
+    if (excludeKeywords.some(keyword => lowerUrl.includes(keyword))) {
       return;
     }
 
-    // サイズチェック（小さすぎる画像を除外）
+    // alt属性に除外キーワードが含まれる
+    const lowerAlt = (img.alt || '').toLowerCase();
+    const excludeAltKeywords = [
+      'ファミリーマート', 'familymart', 'family mart',
+      'ロゴ', 'logo', 'バナー', 'banner',
+      'アイコン', 'icon', 'ボタン', 'button'
+    ];
+
+    if (excludeAltKeywords.some(keyword => lowerAlt.includes(keyword))) {
+      return;
+    }
+
+    // サイズチェック（小さすぎる、または大きすぎる画像を除外）
     if (img.width > 0 && img.height > 0) {
-      if (img.width < 80 || img.height < 80) {
+      // 商品画像は通常 100x100 以上、800x800 以下
+      if (img.width < 100 || img.height < 100) {
+        return;
+      }
+      if (img.width > 800 || img.height > 800) {
         return;
       }
     }
 
-    // 商品名を取得
-    const productName = img.alt || img.title || `product_${products.length + 1}`;
+    // カテゴリアイコンを除外（親要素が ly-cate-img のもの）
+    if (img.parentElement?.classList.contains('ly-cate-img')) {
+      return;
+    }
+
+    // 商品画像の判定条件
+    // 1. family.co.jp の /content/dam/family/goods/ パスの画像（ただしカテゴリ用を除く）
+    // 2. ly-wrp-mod-infoset3-img 内の画像のみ
+    const isProductImageByUrl = lowerUrl.includes('/content/dam/family/goods/') &&
+                                !lowerUrl.includes('img_thumb_');  // カテゴリアイコンを除外
+
+    const isProductImageByClass = img.parentElement?.classList.contains('ly-mod-infoset3-img') ||
+                                  img.parentElement?.parentElement?.classList.contains('ly-wrp-mod-infoset3-img');
+
+    // どちらかの条件を満たさない場合はスキップ
+    if (!isProductImageByUrl && !isProductImageByClass) {
+      return;
+    }
+
+    // 商品名を取得（alt属性が空の場合はファイル名から推測）
+    let productName = img.alt || img.title || '';
+    if (!productName || productName.trim() === '') {
+      // srcからファイル名を取得
+      const urlParts = imgUrl.split('/');
+      const filename = urlParts[urlParts.length - 1].split('.')[0];
+      productName = `商品_${filename}`;
+    }
+
+    // 相対パスを絶対パスに変換
+    let absoluteUrl = imgUrl;
+    if (imgUrl.startsWith('/')) {
+      absoluteUrl = 'https://www.family.co.jp' + imgUrl;
+    }
 
     products.push({
       name: productName,
-      imageUrl: imgUrl,
+      imageUrl: absoluteUrl,
       index: products.length + 1
     });
   });
 
   console.log(`合計 ${products.length} 個の商品画像を検出`);
-  console.log('検出された商品:', products);
+
+  // 検出された商品の詳細を表示（最初の20個）
+  console.log('=== 検出された商品一覧（最初の20個）===');
+  products.forEach((product, idx) => {
+    if (idx < 20) {
+      console.log(`${idx + 1}. ${product.name}`);
+      console.log(`   URL: ${product.imageUrl}`);
+    }
+  });
+  if (products.length > 20) {
+    console.log(`... 他 ${products.length - 20} 個`);
+  }
+
   console.log('=== 画像検出終了 ===');
 
   return products;
