@@ -61,10 +61,11 @@ async function downloadImage(product, index, total) {
     const filename = `famima_${String(product.index).padStart(2, '0')}_${safeName}${ext}`;
 
     // ダウンロード実行
+    // 最初の画像だけ保存先を選択、残りは自動的に同じフォルダに保存
     chrome.downloads.download({
       url: product.imageUrl,
       filename: `famima_images/${filename}`,
-      saveAs: false
+      saveAs: index === 0  // 最初の画像のみ保存先を選択
     }, (downloadId) => {
       if (chrome.runtime.lastError) {
         console.error(`ダウンロード失敗 (${product.name}):`, chrome.runtime.lastError);
