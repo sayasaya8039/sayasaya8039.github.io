@@ -61,7 +61,7 @@ async function downloadImage(product, index, total) {
     const filename = `famima_${String(product.index).padStart(2, '0')}_${safeName}${ext}`;
 
     // ダウンロード実行
-    // 最初の画像だけ保存先を選択、残りは自動的に同じフォルダに保存
+    // 最初の画像だけ保存先を選択、2枚目以降は自動的に同じフォルダに保存
     chrome.downloads.download({
       url: product.imageUrl,
       filename: `famima_images/${filename}`,
@@ -75,8 +75,9 @@ async function downloadImage(product, index, total) {
       } else {
         console.log(`ダウンロード成功 (${index + 1}/${total}): ${filename}`);
         updateProgress(index + 1, total);
-        // ダウンロード間隔を設けて、サーバーに負荷をかけないようにする
-        setTimeout(() => resolve({ success: true, downloadId }), 500);
+        // 最初の画像は保存ダイアログがあるため、長めに待機
+        const waitTime = index === 0 ? 2000 : 500;
+        setTimeout(() => resolve({ success: true, downloadId }), waitTime);
       }
     });
   });
