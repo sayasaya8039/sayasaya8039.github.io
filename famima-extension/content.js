@@ -60,17 +60,16 @@ function extractProductImages() {
                    img.getAttribute('data-original') ||
                    img.getAttribute('data-lazy');
 
-    // デバッグ: 最初の10個の画像情報を出力
+    // デバッグ: 最初の10個の画像情報を詳細に出力
     if (index < 10) {
-      console.log(`画像 #${index + 1}:`, {
-        src: img.src,
-        alt: img.alt,
-        width: img.width,
-        height: img.height,
-        className: img.className,
-        parent: img.parentElement?.tagName,
-        grandparent: img.parentElement?.parentElement?.tagName
-      });
+      console.log(`画像 #${index + 1}:`);
+      console.log(`  src: ${img.src}`);
+      console.log(`  alt: "${img.alt}"`);
+      console.log(`  サイズ: ${img.width} x ${img.height}`);
+      console.log(`  className: "${img.className}"`);
+      console.log(`  親要素: ${img.parentElement?.tagName} (class: ${img.parentElement?.className})`);
+      console.log(`  祖父要素: ${img.parentElement?.parentElement?.tagName} (class: ${img.parentElement?.parentElement?.className})`);
+      console.log('---');
     }
 
     // === 厳格なフィルタリング ===
@@ -150,7 +149,19 @@ function extractProductImages() {
   });
 
   console.log(`合計 ${products.length} 個の商品画像を検出`);
-  console.log('検出された商品:', products);
+
+  // 検出された商品の詳細を表示
+  console.log('=== 検出された商品一覧 ===');
+  products.forEach((product, idx) => {
+    if (idx < 10) {  // 最初の10個のみ
+      console.log(`${idx + 1}. ${product.name}`);
+      console.log(`   URL: ${product.imageUrl}`);
+    }
+  });
+  if (products.length > 10) {
+    console.log(`... 他 ${products.length - 10} 個`);
+  }
+
   console.log('=== 画像検出終了 ===');
 
   return products;
