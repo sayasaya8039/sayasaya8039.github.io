@@ -1,0 +1,66 @@
+{
+  "name": "familymart-products-app",
+  "version": "1.0.0",
+  "description": "ファミリーマート新商品情報アプリ - Windowsデスクトップ版",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --x64",
+    "build:win32": "electron-builder --win --ia32",
+    "build:all": "electron-builder --win --x64 --ia32"
+  },
+  "keywords": [
+    "familymart",
+    "products",
+    "electron"
+  ],
+  "author": "sayasaya8039",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.sayasaya8039.familymart-products",
+    "productName": "ファミリーマート新商品アプリ",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ファミリーマート新商品アプリ"
+    },
+    "portable": {
+      "artifactName": "FamilyMartProducts-Portable.exe"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icon.ico",
+      "icon.png"
+    ]
+  }
+}
