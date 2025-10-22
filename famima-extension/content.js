@@ -7,20 +7,20 @@ function extractProductImages() {
   const products = [];
   console.log('=== 画像検出開始 ===');
 
-  // より幅広いセレクタパターンを試す
+  // より具体的なセレクタパターン（商品リスト内の画像のみ）
   const selectors = [
+    'ul.ly-mod-list4 > li > a > img',
+    'ul.ly-mod-list4 > li img',
     'ul.ly-mod-list4 li img',
-    'ul.product-list li img',
+    'div.ly-mod-list4 li img',
+    'ul.product-list > li > a > img',
+    'ul.product-list > li img',
+    'div.product-item > img',
     'div.product-item img',
-    'li.item img',
-    '.newgoods img',
-    'article img',
-    'div.goods img',
-    '.item-list img',
-    '.product img',
-    'main img',
-    '#main img',
-    '.content img'
+    'ul.goodsList li img',
+    'div.goodsList img',
+    'section.newgoods li img',
+    'section.newgoods img'
   ];
 
   let images = [];
@@ -32,7 +32,8 @@ function extractProductImages() {
       const found = document.querySelectorAll(selector);
       console.log(`セレクタ '${selector}': ${found.length} 個の画像`);
 
-      if (found.length > 0 && images.length === 0) {
+      // 適切な数（1～50個）の画像が見つかった場合のみ使用
+      if (found.length > 0 && found.length <= 50 && images.length === 0) {
         images = found;
         usedSelector = selector;
       }
@@ -41,9 +42,8 @@ function extractProductImages() {
     }
   }
 
-  // セレクタで見つからない場合、すべてのimg要素を取得してフィルタリング
   if (images.length === 0) {
-    console.log('セレクタで見つからなかったため、全画像を検索します');
+    console.log('適切なセレクタが見つからなかったため、全画像から厳密にフィルタリングします');
     images = document.querySelectorAll('img');
     console.log(`ページ内の全画像数: ${images.length}`);
   } else {
@@ -60,46 +60,87 @@ function extractProductImages() {
                    img.getAttribute('data-original') ||
                    img.getAttribute('data-lazy');
 
-    // デバッグ: 最初の数個の画像情報を出力
-    if (index < 5) {
+    // デバッグ: 最初の10個の画像情報を出力
+    if (index < 10) {
       console.log(`画像 #${index + 1}:`, {
         src: img.src,
         alt: img.alt,
         width: img.width,
         height: img.height,
         className: img.className,
-        parent: img.parentElement?.tagName
+        parent: img.parentElement?.tagName,
+        grandparent: img.parentElement?.parentElement?.tagName
       });
     }
 
-    // フィルタリング条件
+    // === 厳格なフィルタリング ===
+
+    // URLが存在しない
     if (!imgUrl) {
       return;
     }
 
-    // データURL、小さなアイコン、ロゴなどをスキップ
+    // データURL
     if (imgUrl.startsWith('data:image')) {
       return;
     }
 
+    // URLに除外キーワードが含まれる
     const lowerUrl = imgUrl.toLowerCase();
-    if (lowerUrl.includes('icon') ||
-        lowerUrl.includes('logo') ||
-        lowerUrl.includes('banner') ||
-        lowerUrl.includes('btn') ||
-        lowerUrl.includes('arrow')) {
+    const excludeKeywords = [
+      'icon', 'logo', 'banner', 'btn', 'button',
+      'arrow', 'nav', 'header', 'footer', 'bg',
+      'background', 'sprite', 'common', 'ui',
+      'symbol', 'mark', 'badge', 'stamp'
+    ];
+
+    if (excludeKeywords.some(keyword => lowerUrl.includes(keyword))) {
       return;
     }
 
-    // サイズチェック（小さすぎる画像を除外）
+    // alt属性に除外キーワードが含まれる
+    const lowerAlt = (img.alt || '').toLowerCase();
+    const excludeAltKeywords = [
+      'ファミリーマート', 'familymart', 'family mart',
+      'ロゴ', 'logo', 'バナー', 'banner',
+      'アイコン', 'icon', 'ボタン', 'button'
+    ];
+
+    if (excludeAltKeywords.some(keyword => lowerAlt.includes(keyword))) {
+      return;
+    }
+
+    // サイズチェック（小さすぎる、または大きすぎる画像を除外）
     if (img.width > 0 && img.height > 0) {
-      if (img.width < 80 || img.height < 80) {
+      // 商品画像は通常 100x100 以上、800x800 以下
+      if (img.width < 100 || img.height < 100) {
+        return;
+      }
+      if (img.width > 800 || img.height > 800) {
         return;
       }
     }
 
+    // 商品画像のURLパターンをチェック（family.co.jp のドメインで goods や product が含まれる）
+    const isProductImageUrl = lowerUrl.includes('family.co.jp') &&
+                              (lowerUrl.includes('goods') ||
+                               lowerUrl.includes('product') ||
+                               lowerUrl.includes('item') ||
+                               lowerUrl.includes('/img/'));
+
+    // 商品画像のURLパターンに合わない場合はスキップ
+    if (!isProductImageUrl) {
+      return;
+    }
+
+    // alt属性が空、または意味のない場合はスキップ
+    const alt = img.alt || img.title || '';
+    if (!alt || alt.trim() === '' || alt === ' ') {
+      return;
+    }
+
     // 商品名を取得
-    const productName = img.alt || img.title || `product_${products.length + 1}`;
+    const productName = alt;
 
     products.push({
       name: productName,
