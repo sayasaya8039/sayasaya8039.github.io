@@ -174,16 +174,16 @@ function extractProductImages() {
 
   console.log(`合計 ${products.length} 個の商品画像を検出`);
 
-  // 検出された商品の詳細を表示
-  console.log('=== 検出された商品一覧 ===');
+  // 検出された商品の詳細を表示（最初の20個）
+  console.log('=== 検出された商品一覧（最初の20個）===');
   products.forEach((product, idx) => {
-    if (idx < 10) {  // 最初の10個のみ
+    if (idx < 20) {
       console.log(`${idx + 1}. ${product.name}`);
       console.log(`   URL: ${product.imageUrl}`);
     }
   });
-  if (products.length > 10) {
-    console.log(`... 他 ${products.length - 10} 個`);
+  if (products.length > 20) {
+    console.log(`... 他 ${products.length - 20} 個`);
   }
 
   console.log('=== 画像検出終了 ===');
