@@ -9,6 +9,11 @@ function extractProductImages() {
 
   // より具体的なセレクタパターン（商品リスト内の画像のみ）
   const selectors = [
+    // ファミリーマートの実際の構造
+    '.ly-wrp-mod-infoset3-img img',
+    'img.ly-hovr',
+    '.ly-mod-infoset3-img img',
+    // その他のパターン
     'ul.ly-mod-list4 > li > a > img',
     'ul.ly-mod-list4 > li img',
     'ul.ly-mod-list4 li img',
@@ -128,30 +133,41 @@ function extractProductImages() {
       }
     }
 
-    // 商品画像のURLパターンをチェック（family.co.jp のドメインで goods や product が含まれる）
-    const isProductImageUrl = lowerUrl.includes('family.co.jp') &&
-                              (lowerUrl.includes('goods') ||
-                               lowerUrl.includes('product') ||
-                               lowerUrl.includes('item') ||
-                               lowerUrl.includes('/img/'));
+    // 商品画像の判定条件
+    // 1. family.co.jp の /content/dam/family/goods/ パスの画像
+    // 2. ly-hovr クラスを持つ画像
+    const isProductImageByUrl = lowerUrl.includes('/content/dam/family/goods/') ||
+                                (lowerUrl.includes('family.co.jp') &&
+                                 (lowerUrl.includes('goods') ||
+                                  lowerUrl.includes('product') ||
+                                  lowerUrl.includes('item')));
 
-    // 商品画像のURLパターンに合わない場合はスキップ
-    if (!isProductImageUrl) {
+    const isProductImageByClass = img.classList.contains('ly-hovr') ||
+                                  img.parentElement?.classList.contains('ly-mod-infoset3-img');
+
+    // どちらかの条件を満たさない場合はスキップ
+    if (!isProductImageByUrl && !isProductImageByClass) {
       return;
     }
 
-    // alt属性が空、または意味のない場合はスキップ
-    const alt = img.alt || img.title || '';
-    if (!alt || alt.trim() === '' || alt === ' ') {
-      return;
+    // 商品名を取得（alt属性が空の場合はファイル名から推測）
+    let productName = img.alt || img.title || '';
+    if (!productName || productName.trim() === '') {
+      // srcからファイル名を取得
+      const urlParts = imgUrl.split('/');
+      const filename = urlParts[urlParts.length - 1].split('.')[0];
+      productName = `商品_${filename}`;
     }
 
-    // 商品名を取得
-    const productName = alt;
+    // 相対パスを絶対パスに変換
+    let absoluteUrl = imgUrl;
+    if (imgUrl.startsWith('/')) {
+      absoluteUrl = 'https://www.family.co.jp' + imgUrl;
+    }
 
     products.push({
       name: productName,
-      imageUrl: imgUrl,
+      imageUrl: absoluteUrl,
       index: products.length + 1
     });
   });
