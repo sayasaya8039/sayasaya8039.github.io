@@ -37,8 +37,8 @@ function extractProductImages() {
       const found = document.querySelectorAll(selector);
       console.log(`セレクタ '${selector}': ${found.length} 個の画像`);
 
-      // 適切な数（1～50個）の画像が見つかった場合のみ使用
-      if (found.length > 0 && found.length <= 50 && images.length === 0) {
+      // 適切な数（1～150個）の画像が見つかった場合のみ使用
+      if (found.length > 0 && found.length <= 150 && images.length === 0) {
         images = found;
         usedSelector = selector;
       }
@@ -133,17 +133,19 @@ function extractProductImages() {
       }
     }
 
-    // 商品画像の判定条件
-    // 1. family.co.jp の /content/dam/family/goods/ パスの画像
-    // 2. ly-hovr クラスを持つ画像
-    const isProductImageByUrl = lowerUrl.includes('/content/dam/family/goods/') ||
-                                (lowerUrl.includes('family.co.jp') &&
-                                 (lowerUrl.includes('goods') ||
-                                  lowerUrl.includes('product') ||
-                                  lowerUrl.includes('item')));
+    // カテゴリアイコンを除外（親要素が ly-cate-img のもの）
+    if (img.parentElement?.classList.contains('ly-cate-img')) {
+      return;
+    }
 
-    const isProductImageByClass = img.classList.contains('ly-hovr') ||
-                                  img.parentElement?.classList.contains('ly-mod-infoset3-img');
+    // 商品画像の判定条件
+    // 1. family.co.jp の /content/dam/family/goods/ パスの画像（ただしカテゴリ用を除く）
+    // 2. ly-wrp-mod-infoset3-img 内の画像のみ
+    const isProductImageByUrl = lowerUrl.includes('/content/dam/family/goods/') &&
+                                !lowerUrl.includes('img_thumb_');  // カテゴリアイコンを除外
+
+    const isProductImageByClass = img.parentElement?.classList.contains('ly-mod-infoset3-img') ||
+                                  img.parentElement?.parentElement?.classList.contains('ly-wrp-mod-infoset3-img');
 
     // どちらかの条件を満たさない場合はスキップ
     if (!isProductImageByUrl && !isProductImageByClass) {
