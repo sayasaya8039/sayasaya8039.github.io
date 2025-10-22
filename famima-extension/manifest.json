@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ファミリーマート新商品画像ダウンローダー",
-  "version": "1.2.0",
-  "description": "ファミリーマートの来週の新商品ページから5個以上の商品がある場合に画像を一括ダウンロードします",
+  "version": "1.3.0",
+  "description": "ファミリーマートの今週・来週の新商品ページから5個以上の商品がある場合に画像を一括ダウンロードします",
   "permissions": [
     "downloads",
     "activeTab"
@@ -26,6 +26,8 @@
   "content_scripts": [
     {
       "matches": [
+        "https://www.family.co.jp/goods/newgoods.html",
+        "https://www.family.co.jp/goods/newgoods.html*",
         "https://www.family.co.jp/goods/newgoods/nextweek.html",
         "https://www.family.co.jp/goods/newgoods/nextweek.html*"
       ],
