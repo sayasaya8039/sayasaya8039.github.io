@@ -25,8 +25,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.family.co.jp/goods/newgoods/nextweek.html"],
-      "js": ["content.js"]
+      "matches": [
+        "https://www.family.co.jp/goods/newgoods/nextweek.html",
+        "https://www.family.co.jp/goods/newgoods/nextweek.html*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ],
   "background": {
