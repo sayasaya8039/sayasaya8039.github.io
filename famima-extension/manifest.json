@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ファミリーマート新商品画像ダウンローダー",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "ファミリーマートの今週・来週の新商品ページから5個以上の商品がある場合に画像を一括ダウンロードします",
   "permissions": [
     "downloads",

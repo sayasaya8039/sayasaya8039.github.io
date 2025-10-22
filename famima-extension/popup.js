@@ -50,7 +50,7 @@ function sanitizeFilename(name) {
  * 画像をダウンロード
  */
 async function downloadImage(product, index, total) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // 拡張子を取得
     const url = new URL(product.imageUrl);
     const pathname = url.pathname;
@@ -68,13 +68,15 @@ async function downloadImage(product, index, total) {
       saveAs: index === 0  // 最初の画像のみ保存先を選択
     }, (downloadId) => {
       if (chrome.runtime.lastError) {
-        console.error(`ダウンロード失敗 (${product.name}):`, chrome.runtime.lastError);
-        reject(chrome.runtime.lastError);
+        console.error(`ダウンロード失敗 (${index + 1}/${total}) ${product.name}:`, chrome.runtime.lastError);
+        updateProgress(index + 1, total);
+        // エラーでも次の画像に進む
+        setTimeout(() => resolve({ success: false, error: chrome.runtime.lastError }), 500);
       } else {
-        console.log(`ダウンロード成功: ${filename}`);
+        console.log(`ダウンロード成功 (${index + 1}/${total}): ${filename}`);
         updateProgress(index + 1, total);
         // ダウンロード間隔を設けて、サーバーに負荷をかけないようにする
-        setTimeout(() => resolve(downloadId), 300);
+        setTimeout(() => resolve({ success: true, downloadId }), 500);
       }
     });
   });
@@ -102,16 +104,27 @@ async function downloadAllImages() {
     // ダウンロード開始
     updateProgress(0, products.length);
 
+    let successCount = 0;
+    let failCount = 0;
+
     for (let i = 0; i < products.length; i++) {
-      try {
-        await downloadImage(products[i], i, products.length);
-      } catch (error) {
-        console.error(`画像のダウンロードに失敗: ${products[i].name}`, error);
+      const result = await downloadImage(products[i], i, products.length);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
       }
     }
 
     hideProgress();
-    showMessage(`${products.length}個の画像のダウンロードが完了しました！`, 'success');
+
+    // 結果を表示
+    if (failCount === 0) {
+      showMessage(`${successCount}個の画像のダウンロードが完了しました！`, 'success');
+    } else {
+      showMessage(`ダウンロード完了: 成功 ${successCount}個、失敗 ${failCount}個`, 'warning');
+    }
+
     downloadBtn.textContent = '画像をダウンロード';
 
   } catch (error) {
