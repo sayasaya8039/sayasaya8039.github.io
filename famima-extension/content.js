@@ -51,6 +51,7 @@ function extractProductImages() {
   }
 
   // 画像を処理
+  let debugCount = 0;
   images.forEach((img, index) => {
     // 様々な属性から画像URLを取得
     const imgUrl = img.src ||
@@ -60,18 +61,6 @@ function extractProductImages() {
                    img.getAttribute('data-original') ||
                    img.getAttribute('data-lazy');
 
-    // デバッグ: 最初の10個の画像情報を詳細に出力
-    if (index < 10) {
-      console.log(`画像 #${index + 1}:`);
-      console.log(`  src: ${img.src}`);
-      console.log(`  alt: "${img.alt}"`);
-      console.log(`  サイズ: ${img.width} x ${img.height}`);
-      console.log(`  className: "${img.className}"`);
-      console.log(`  親要素: ${img.parentElement?.tagName} (class: ${img.parentElement?.className})`);
-      console.log(`  祖父要素: ${img.parentElement?.parentElement?.tagName} (class: ${img.parentElement?.parentElement?.className})`);
-      console.log('---');
-    }
-
     // === 厳格なフィルタリング ===
 
     // URLが存在しない
@@ -79,9 +68,28 @@ function extractProductImages() {
       return;
     }
 
+    // Chrome拡張機能の画像を除外（重要！）
+    if (imgUrl.startsWith('chrome-extension://')) {
+      return;
+    }
+
     // データURL
     if (imgUrl.startsWith('data:image')) {
       return;
+    }
+
+    // デバッグ: family.co.jp ドメインの最初の20個の画像情報を詳細に出力
+    const isFamilyDomain = imgUrl.includes('family.co.jp');
+    if (isFamilyDomain && debugCount < 20) {
+      console.log(`[family.co.jp] 画像 #${debugCount + 1}:`);
+      console.log(`  src: ${imgUrl}`);
+      console.log(`  alt: "${img.alt}"`);
+      console.log(`  サイズ: ${img.width} x ${img.height}`);
+      console.log(`  className: "${img.className}"`);
+      console.log(`  親要素: ${img.parentElement?.tagName} (class: "${img.parentElement?.className}")`);
+      console.log(`  祖父要素: ${img.parentElement?.parentElement?.tagName} (class: "${img.parentElement?.parentElement?.className}")`);
+      console.log('---');
+      debugCount++;
     }
 
     // URLに除外キーワードが含まれる
