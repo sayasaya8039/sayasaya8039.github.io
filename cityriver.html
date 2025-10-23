@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>合同会社シティーリバー | CityRiver LLC</title>
+  <meta name="description" content="合同会社シティーリバーは投資業、イラスト制作、Webデザイン、コンビニエンスストア運営を通じて街に新しい流れを生み出します。" />
+  <style>
+    :root {
+      --bg: #040817;
+      --layer: rgba(10, 18, 41, 0.82);
+      --accent: #00c2ff;
+      --accent-2: #7460ff;
+      --muted: #8ca2d6;
+      --text: #dbe5ff;
+      --line: rgba(116, 152, 255, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Hiragino Sans", "BIZ UDGothic", system-ui, sans-serif;
+      background:
+        radial-gradient(120% 120% at 15% 15%, rgba(0, 194, 255, 0.25), transparent 60%),
+        radial-gradient(100% 100% at 85% 0%, rgba(116, 96, 255, 0.25), transparent 62%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(4, 10, 26, 0.95) 0%, rgba(4, 8, 23, 0.45) 100%);
+      border-bottom: 1px solid rgba(116, 152, 255, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 18px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-text {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .logo-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0, 194, 255, 0.8), rgba(116, 96, 255, 0.9));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #021628;
+    }
+
+    .nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav a:hover {
+      color: var(--accent);
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 80px 30px 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 100px;
+    }
+
+    .hero {
+      background: linear-gradient(150deg, rgba(0, 194, 255, 0.12), rgba(3, 24, 44, 0.4));
+      border-radius: 36px;
+      padding: 70px 66px;
+      border: 1px solid rgba(116, 152, 255, 0.18);
+      box-shadow: 0 22px 60px -40px rgba(0, 194, 255, 0.6);
+      display: grid;
+      gap: 28px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(3rem, 6vw, 3.8rem);
+      line-height: 1.15;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 18px;
+      color: #c4d4f9;
+      max-width: 640px;
+    }
+
+    .tagline {
+      text-transform: uppercase;
+      letter-spacing: 0.38em;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 26px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #011724;
+      box-shadow: 0 16px 34px -16px rgba(0, 194, 255, 0.8);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 42px -20px rgba(0, 194, 255, 0.9);
+    }
+
+    .btn-secondary {
+      border: 1px solid rgba(116, 152, 255, 0.35);
+      background: rgba(4, 12, 30, 0.85);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      border-color: rgba(116, 152, 255, 0.6);
+    }
+
+    .section {
+      display: grid;
+      gap: 24px;
+    }
+
+    .section-header {
+      display: grid;
+      gap: 12px;
+      max-width: 620px;
+    }
+
+    .section-title {
+      font-size: clamp(2.2rem, 4vw, 2.6rem);
+      margin: 0;
+    }
+
+    .section-subtitle {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 26px;
+    }
+
+    .service-card {
+      background: var(--layer);
+      border-radius: 24px;
+      padding: 30px;
+      border: 1px solid rgba(116, 152, 255, 0.12);
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .service-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid transparent;
+      background: linear-gradient(140deg, rgba(0, 194, 255, 0.22), rgba(116, 96, 255, 0.12)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .service-card h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .service-card p {
+      margin: 0;
+      color: #b7c7f1;
+      font-size: 15px;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+    }
+
+    .info-card {
+      background: var(--layer);
+      border-radius: 24px;
+      padding: 32px;
+      border: 1px solid rgba(116, 152, 255, 0.1);
+      backdrop-filter: blur(14px);
+    }
+
+    .info-card h3 {
+      margin: 0 0 16px;
+      font-size: 19px;
+      letter-spacing: 0.05em;
+    }
+
+    dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr);
+      gap: 10px 18px;
+      font-size: 15px;
+    }
+
+    dt {
+      color: var(--muted);
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    .philosophy {
+      display: grid;
+      gap: 18px;
+    }
+
+    .philosophy-quote {
+      font-size: 17px;
+      color: #d2e3ff;
+      border-left: 3px solid rgba(0, 194, 255, 0.6);
+      padding-left: 16px;
+    }
+
+    .contact {
+      background: linear-gradient(150deg, rgba(0, 194, 255, 0.18), rgba(116, 96, 255, 0.18));
+      border-radius: 32px;
+      padding: 48px 52px;
+      border: 1px solid rgba(116, 152, 255, 0.2);
+      display: grid;
+      gap: 20px;
+    }
+
+    .contact-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    footer {
+      padding: 50px 0 60px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        padding: 16px 22px;
+      }
+
+      main {
+        padding: 70px 22px 100px;
+        gap: 80px;
+      }
+
+      .hero {
+        padding: 48px 34px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      dl {
+        grid-template-columns: 1fr;
+      }
+
+      .contact {
+        padding: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav">
+      <div class="logo-text">
+        <span class="logo-mark">CR</span>
+        合同会社シティーリバー
+      </div>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="tagline">Flowing With The City</div>
+      <h1>街に、ビジネスと創造の新しい流れを描く。</h1>
+      <p>
+        合同会社シティーリバーは、投資業・イラスト制作・Webデザイン・コンビニエンスストア運営という多彩な事業を通じ、
+        人と街をつなぐ価値を創造しています。経験に裏打ちされた戦略と、想像力豊かなクリエイティブで、都市を流れる水のように
+        しなやかで力強いビジネスの循環を実現します。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#services">事業内容を見る</a>
+        <a class="btn btn-secondary" href="#profile">会社情報</a>
+      </div>
+    </section>
+
+    <section id="services" class="section">
+      <div class="section-header">
+        <h2 class="section-title">事業内容</h2>
+        <p class="section-subtitle">都市生活をめぐる4つの領域で、投資・クリエイティブ・店舗運営を横断的に支援します。</p>
+      </div>
+      <div class="service-grid">
+        <article class="service-card">
+          <h3>投資業</h3>
+          <p>成長分野への戦略投資と、長期的な視点に立った資産形成のパートナーとして、確かなリターンを目指します。</p>
+        </article>
+        <article class="service-card">
+          <h3>イラスト制作</h3>
+          <p>ブランドの世界観やプロジェクトの想いを、細部まで丁寧に描き出すアートワークで印象を最大化します。</p>
+        </article>
+        <article class="service-card">
+          <h3>Webデザイン</h3>
+          <p>ユーザー体験に寄り添いながら、洗練されたビジュアルと堅牢な情報設計で成果につながるサイトを構築します。</p>
+        </article>
+        <article class="service-card">
+          <h3>コンビニエンスストア運営</h3>
+          <p>地域に密着した店舗づくりで、日々の暮らしに寄り添いながら、新しいサービスの実験場としての機能も備えます。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="profile" class="section">
+      <div class="section-header">
+        <h2 class="section-title">会社情報</h2>
+        <p class="section-subtitle">幅広い事業を束ねるチームとして、信頼とスピードを両立した意思決定を行っています。</p>
+      </div>
+      <div class="details">
+        <div class="info-card">
+          <h3>企業概要</h3>
+          <dl>
+            <dt>会社名</dt>
+            <dd>合同会社シティーリバー</dd>
+            <dt>代表取締役</dt>
+            <dd>市川 武宏</dd>
+            <dt>所在地</dt>
+            <dd>〒470-0131 愛知県日進市梅森町上松６４９番地１</dd>
+            <dt>電話番号</dt>
+            <dd><a href="tel:090-8868-6505" style="color:inherit;">090-8868-6505</a></dd>
+            <dt>メール</dt>
+            <dd><a href="mailto:cityriver8039@gmail.com" style="color:inherit;">cityriver8039@gmail.com</a></dd>
+          </dl>
+        </div>
+        <div class="info-card">
+          <h3>私たちの姿勢</h3>
+          <div class="philosophy">
+            <p class="philosophy-quote">「都市に流れる水のように、多様なニーズを受け止め、柔らかくかつ確実に価値へとつなぐ。」</p>
+            <p>投資では持続性と透明性を重視し、クリエイティブ領域では感性と機能性の融合を追求。店舗運営では地域との共創を軸に、
+              グループ全体として循環するビジネスの流れをデザインします。</p>
+            <p>分野を越えて蓄積したノウハウを横断的に活かし、新しい都市体験を描くプロジェクトを支援します。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <h2 class="section-title" style="margin: 0;">お問い合わせ</h2>
+      <p style="margin: 0; color: #e6efff;">
+        新規プロジェクトのご相談、コラボレーションのご提案、メディア取材など、お気軽にご連絡ください。
+      </p>
+      <div class="contact-actions">
+        <a class="btn btn-primary" href="mailto:cityriver8039@gmail.com">メールで問い合わせる</a>
+        <a class="btn btn-secondary" href="tel:090-8868-6505">電話する</a>
+      </div>
+      <div style="font-size: 14px; color: rgba(219, 229, 255, 0.7);">
+        〒470-0131 愛知県日進市梅森町上松６４９番地１
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © <span id="year"></span> 合同会社シティーリバー / CityRiver LLC. All rights reserved.
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
