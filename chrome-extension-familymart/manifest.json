@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "FamilyMart Product Images",
+  "version": "1.0.0",
+  "description": "ファミリーマート新商品ページから商品画像を一括ダウンロード",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.family.co.jp/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.family.co.jp/goods/newgoods*"],
+      "js": ["content.js"]
+    }
+  ]
+}
